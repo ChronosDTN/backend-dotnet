@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <!-- Habilita recursos modernos de linguagem C# como pattern matching e record classes -->
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Garante que avisos de compilacao sejam tratados com rigor no pipeline de integracao -->
+    <!-- Avisos de compilacao NAO sao tratados como erros — defina true em CI/CD para maior rigor -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 

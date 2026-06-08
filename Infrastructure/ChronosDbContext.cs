@@ -1,45 +1,64 @@
-namespace ChronosDotnetApi.Infrastructure; // Namespace da camada de infraestrutura e dados do Clean Architecture.
+namespace ChronosDotnetApi.Infrastructure; // Namespace da camada de infraestrutura e dados.
 
 using ChronosDotnetApi.Domain; // Importa as entidades de dominio para mapeamento no contexto.
 using Microsoft.EntityFrameworkCore; // Importa os componentes do Entity Framework Core.
 
-public class ChronosDbContext : DbContext { // Declaracao da classe principal de contexto.
+/// <summary>
+/// DbContext principal do Chronos DTN — gerencia o acesso ao Oracle XE e
+/// configura os relacionamentos entre entidades via Fluent API.
+/// </summary>
+public class ChronosDbContext : DbContext {
 
-    public ChronosDbContext(DbContextOptions<ChronosDbContext> options) : base(options) {
-        // Construtor padrao recebendo configuracoes de conexao do container ASP.NET Core.
-    } // Fim do construtor.
+    /// <summary>
+    /// Construtor padrão recebendo as opções de conexão injetadas pelo container ASP.NET Core.
+    /// </summary>
+    public ChronosDbContext(DbContextOptions<ChronosDbContext> options) : base(options) { }
 
-    // Colecao de mapeamento e acesso a tabela de Gateways de Rede (Nodes).
+    /// <summary>Coleção mapeada para a tabela T_CDTN_NODE_REGISTRY (gateways de rede).</summary>
     public DbSet<Node> Nodes { get; set; } = null!;
-    // Colecao de mapeamento e acesso a tabela de Saldos de Ativos (AssetBalances).
+
+    /// <summary>Coleção mapeada para a tabela T_CDTN_ASSET_BALANCES (saldos de stablecoins).</summary>
     public DbSet<AssetBalance> AssetBalances { get; set; } = null!;
-    // Colecao de mapeamento e acesso a tabela de Rotas/Links Dinâmicos (NodeLinks).
+
+    /// <summary>Coleção mapeada para a tabela T_CDTN_DYNAMIC_ROUTES (links de topologia N:N).</summary>
     public DbSet<NodeLink> NodeLinks { get; set; } = null!;
 
-    @Override // Sobrescrita do metodo de definicao e construcao de modelos do EF Core.
-    protected void OnModelCreating(ModelBuilder modelBuilder) { // Metodo OnModelCreating.
-        
-        // Configura chave primaria composta ou chaves alternativas se necessario (baseado em anotações).
-        base.OnModelCreating(modelBuilder); // Chama execucao padrão do EF Core.
+    /// <summary>
+    /// Configura os relacionamentos e comportamentos de deleção via Fluent API do EF Core.
+    /// A keyword <c>override</c> em C# é OBRIGATÓRIA na assinatura para que o EF Core
+    /// invoque este método durante a construção do modelo — diferente do Java onde
+    /// <c>@Override</c> é apenas uma anotação opcional de verificação do compilador.
+    /// </summary>
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
 
-        // 1:N Relationship Configuration (Node -> AssetBalances)
-        modelBuilder.Entity<AssetBalance>() // Habilita configuracoes para a entidade de saldos.
-            .HasOne(ab => ab.Node) // Informa que cada saldo pertence a exatamente 1 No.
-            .WithMany(n => n.Balances) // Informa que cada No possui N saldos cadastrados.
-            .HasForeignKey(ab => ab.IdNode) // Configura a chave estrangeira fisica no banco.
-            .OnDelete(DeleteBehavior.Cascade); // Determina delecao em cascata ao excluir o no pai.
+        // Chama a implementação base do EF Core antes de aplicar configurações customizadas.
+        base.OnModelCreating(modelBuilder);
 
-        // N:N Relationship Routing Configuration (Node -> Node via NodeLink)
-        modelBuilder.Entity<NodeLink>() // Configura a entidade de juncao N:N.
-            .HasOne(nl => nl.SourceNode) // Configura o relacionamento de origem de sinal.
-            .WithMany(n => n.OutgoingLinks) // Informa que o No de origem possui N links de saida.
-            .HasForeignKey(nl => nl.SourceNodeId) // Especifica chave estrangeira de origem.
-            .OnDelete(DeleteBehavior.Restrict); // Evita exclusao recursiva multipla do mesmo no.
+        // ─── Relacionamento 1:N — Node → AssetBalance ──────────────────────────────
+        // Cascade: ao deletar um Node, todos os AssetBalances filhos são removidos automaticamente.
+        // Justificativa: saldo de stablecoin não tem sentido de existir sem o nó gateway pai.
+        modelBuilder.Entity<AssetBalance>()
+            .HasOne(ab => ab.Node)
+            .WithMany(n => n.Balances)
+            .HasForeignKey(ab => ab.IdNode)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<NodeLink>() // Configura a outra ponta do relacionamento de juncao.
-            .HasOne(nl => nl.TargetNode) // Configura o relacionamento de destino do sinal.
-            .WithMany(n => n.IncomingLinks) // Informa que o No de destino possui N links de entrada.
-            .HasForeignKey(nl => nl.TargetNodeId) // Especifica chave estrangeira de destino.
-            .OnDelete(DeleteBehavior.Restrict); // Evita exclusao recursiva multipla.
-    } // Fim do metodo OnModelCreating.
-} // Fim do DbContext.
+        // ─── Relacionamento N:N — Node ↔ Node via NodeLink ─────────────────────────
+        // Restrict na origem: impede deletar um Node que ainda tem rotas de saída ativas.
+        // Restrict no destino: impede deletar um Node que ainda é destino de rotas ativas.
+        // Justificativa: DeleteBehavior.Cascade em ambas as FKs da mesma tabela causaria
+        // "multiple cascade paths" — erro do SQL Server/Oracle. Restrict evita deleção
+        // acidental de nós com conectividade ativa na topologia cislunar.
+        modelBuilder.Entity<NodeLink>()
+            .HasOne(nl => nl.SourceNode)
+            .WithMany(n => n.OutgoingLinks)
+            .HasForeignKey(nl => nl.SourceNodeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<NodeLink>()
+            .HasOne(nl => nl.TargetNode)
+            .WithMany(n => n.IncomingLinks)
+            .HasForeignKey(nl => nl.TargetNodeId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
