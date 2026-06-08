@@ -1,0 +1,36 @@
+## .NET / ASP.NET Core
+
+# Artefatos de build gerados automaticamente pelo SDK .NET — não devem ir ao repositório
+[Bb]in/
+[Oo]bj/
+
+# Configurações de usuário do Visual Studio / Rider
+*.user
+*.suo
+.vs/
+.idea/
+
+# Arquivos de publicação
+[Pp]ublish/
+publish/
+
+# Pacotes NuGet restaurados localmente
+.nuget/
+packages/
+*.nupkg
+
+# Cobertura de testes
+coverage/
+TestResults/
+
+# ─── SEGREDOS — NUNCA COMMITADOS ──────────────────────────────────────────────
+# User Secrets do .NET (dotnet user-secrets) — armazenados fora do repositório
+# %APPDATA%/Microsoft/UserSecrets/<UserSecretsId>/secrets.json
+# Os secrets NÃO ficam nesta pasta, mas o arquivo de override local também não vai ao git
+
+# Override local de connection strings — use variáveis de ambiente em produção
+appsettings.Development.json
+
+# Logs de execução
+*.log
+logs/
