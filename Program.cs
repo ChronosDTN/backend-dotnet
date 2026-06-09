@@ -1,31 +1,40 @@
-using ChronosDotnetApi.Infrastructure; // Importa a camada de dados contendo o DbContext.
-using Microsoft.EntityFrameworkCore; // Importa componentes de extensao do EF Core.
+using ChronosDotnetApi.Infrastructure;
+using ChronosDotnetApi.Services; // ADICIONADO
+using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args); // Cria o construtor da aplicacao Web principal do ASP.NET.
+var builder = WebApplication.CreateBuilder(args);
 
 // Adiciona os servicos necessarios para o funcionamento dos controladores de API REST.
 builder.Services.AddControllers();
 
 // Adiciona os geradores de metadados do Swagger para documentacao.
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => {
+    options.SwaggerDoc("v1", new() {
+        Title = "Chronos DTN API",
+        Version = "v1",
+        Description = "API REST para gerenciamento de nós e topologia da rede DTN Terra-Lua"
+    });
+});
 
 // Registra a classe ChronosDbContext no container de Injecao de Dependencias.
 builder.Services.AddDbContext<ChronosDbContext>(options =>
-    // Configura o Entity Framework Core para utilizar o driver gerenciado oficial do Oracle Database.
     options.UseOracle(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-var app = builder.Build(); // Constroi a aplicacao com base nos servicos configurados acima.
+// ADICIONADO: Registra a camada de serviço (Clean Architecture)
+builder.Services.AddScoped<INodeService, NodeService>();
+
+var app = builder.Build();
 
 // Configura o pipeline de atendimento de requisições HTTP para ambiente local ou desenvolvimento.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger(); // Habilita o middleware de geracao do Swagger JSON.
-    app.UseSwaggerUI(); // Habilita o middleware de interface grafica Web do Swagger.
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
-app.UseAuthorization(); // Habilita o middleware de autorizacao de rotas de seguranca.
+// REMOVIDO: app.UseAuthorization(); (não há esquema de autenticação configurado)
 
-app.MapControllers(); // Realiza o mapeamento automatico de rotas com base nas anotacoes dos Controllers.
+app.MapControllers();
 
-app.Run(); // Inicia a escuta por requisições HTTP da API Web.
+app.Run();
