@@ -46,6 +46,9 @@ public class NodesController : ControllerBase {
     [ProducesResponseType(typeof(NodeDto), 201)]
     [ProducesResponseType(400)]
     public async Task<ActionResult<NodeDto>> PostNode(NodeCreateDto dto) {
+        if (!ModelState.IsValid) {
+            return BadRequest(ModelState);
+        }
         var node = await _nodeService.CreateNodeAsync(dto);
         return CreatedAtAction(nameof(GetNode), new { id = node.IdNode }, node);
     }
@@ -55,8 +58,12 @@ public class NodesController : ControllerBase {
     /// </summary>
     [HttpPut("{id}")]
     [ProducesResponseType(204)]
+    [ProducesResponseType(400)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> PutNode(int id, NodeUpdateDto dto) {
+        if (!ModelState.IsValid) {
+            return BadRequest(ModelState);
+        }
         var updated = await _nodeService.UpdateNodeAsync(id, dto);
         if (!updated) {
             return NotFound(new { message = $"Nó com ID {id} não encontrado." });
