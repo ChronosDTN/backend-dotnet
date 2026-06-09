@@ -14,24 +14,34 @@ public class NodeService : INodeService {
         _logger = logger;
     }
 
-    public async Task<IEnumerable<NodeDto>> GetAllNodesAsync() {
-        var nodes = await _context.Nodes
-            .Include(n => n.Balances)
+    public async Task<PagedResultDto<NodeDto>> GetAllNodesAsync(int page, int pageSize) {
+        var query = _context.Nodes.Include(n => n.Balances);
+        var total = await query.CountAsync();
+        var nodes = await query
+            .OrderBy(n => n.IdNode)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return nodes.Select(n => new NodeDto {
-            IdNode = n.IdNode,
-            Name = n.Name,
-            Location = n.Location,
-            NetworkAddress = n.NetworkAddress,
-            CreatedAt = n.CreatedAt,
-            Balances = n.Balances.Select(b => new AssetBalanceDto {
-                IdAsset = b.IdAsset,
-                Symbol = b.Symbol,
-                Balance = b.Balance,
-                LastUpdate = b.LastUpdate
-            }).ToList()
-        });
+        return new PagedResultDto<NodeDto> {
+            Items = nodes.Select(n => new NodeDto {
+                IdNode = n.IdNode,
+                Name = n.Name,
+                Location = n.Location,
+                NetworkAddress = n.NetworkAddress,
+                CreatedAt = n.CreatedAt,
+                Balances = n.Balances.Select(b => new AssetBalanceDto {
+                    IdAsset = b.IdAsset,
+                    IdNode = b.IdNode,
+                    Symbol = b.Symbol,
+                    Balance = b.Balance,
+                    LastUpdate = b.LastUpdate
+                }).ToList()
+            }),
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<NodeDto?> GetNodeByIdAsync(int id) {
@@ -49,6 +59,7 @@ public class NodeService : INodeService {
             CreatedAt = node.CreatedAt,
             Balances = node.Balances.Select(b => new AssetBalanceDto {
                 IdAsset = b.IdAsset,
+                IdNode = b.IdNode,
                 Symbol = b.Symbol,
                 Balance = b.Balance,
                 LastUpdate = b.LastUpdate

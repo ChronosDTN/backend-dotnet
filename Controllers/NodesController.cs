@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ChronosDotnetApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class NodesController : ControllerBase {
 
     private readonly INodeService _nodeService;
@@ -19,9 +19,12 @@ public class NodesController : ControllerBase {
     /// Lista todos os nós ativos na rede DTN com seus saldos.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<NodeDto>), 200)]
-    public async Task<ActionResult<IEnumerable<NodeDto>>> GetNodes() {
-        var nodes = await _nodeService.GetAllNodesAsync();
+    [ProducesResponseType(typeof(PagedResultDto<NodeDto>), 200)]
+    public async Task<ActionResult<PagedResultDto<NodeDto>>> GetNodes([FromQuery] int page = 1, [FromQuery] int pageSize = 20) {
+        if (page < 1 || pageSize < 1 || pageSize > 100) {
+            return BadRequest(new { message = "Parâmetros de paginação inválidos. page >= 1, pageSize entre 1 e 100." });
+        }
+        var nodes = await _nodeService.GetAllNodesAsync(page, pageSize);
         return Ok(nodes);
     }
 

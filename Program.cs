@@ -1,13 +1,11 @@
 using ChronosDotnetApi.Infrastructure;
-using ChronosDotnetApi.Services; // ADICIONADO
+using ChronosDotnetApi.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Adiciona os servicos necessarios para o funcionamento dos controladores de API REST.
 builder.Services.AddControllers();
 
-// Adiciona os geradores de metadados do Swagger para documentacao.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => {
     options.SwaggerDoc("v1", new() {
@@ -17,23 +15,30 @@ builder.Services.AddSwaggerGen(options => {
     });
 });
 
-// Registra a classe ChronosDbContext no container de Injecao de Dependencias.
 builder.Services.AddDbContext<ChronosDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ADICIONADO: Registra a camada de serviço (Clean Architecture)
 builder.Services.AddScoped<INodeService, NodeService>();
+builder.Services.AddScoped<IAssetBalanceService, AssetBalanceService>();
+builder.Services.AddScoped<INodeLinkService, NodeLinkService>();
+
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowAll", policy => {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
-// Configura o pipeline de atendimento de requisições HTTP para ambiente local ou desenvolvimento.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// REMOVIDO: app.UseAuthorization(); (não há esquema de autenticação configurado)
+app.UseCors("AllowAll");
 
 app.MapControllers();
 
