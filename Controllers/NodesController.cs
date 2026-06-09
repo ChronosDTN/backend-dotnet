@@ -45,12 +45,17 @@ public class NodesController : ControllerBase {
     [HttpPost]
     [ProducesResponseType(typeof(NodeDto), 201)]
     [ProducesResponseType(400)]
+    [ProducesResponseType(409)]
     public async Task<ActionResult<NodeDto>> PostNode(NodeCreateDto dto) {
         if (!ModelState.IsValid) {
             return BadRequest(ModelState);
         }
-        var node = await _nodeService.CreateNodeAsync(dto);
-        return CreatedAtAction(nameof(GetNode), new { id = node.IdNode }, node);
+        try {
+            var node = await _nodeService.CreateNodeAsync(dto);
+            return CreatedAtAction(nameof(GetNode), new { id = node.IdNode }, node);
+        } catch (DbUpdateException) {
+            return Conflict(new { message = "Não foi possível criar o nó. Verifique se o endereço de rede já está em uso." });
+        }
     }
 
     /// <summary>
@@ -60,15 +65,20 @@ public class NodesController : ControllerBase {
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]
+    [ProducesResponseType(409)]
     public async Task<IActionResult> PutNode(int id, NodeUpdateDto dto) {
         if (!ModelState.IsValid) {
             return BadRequest(ModelState);
         }
-        var updated = await _nodeService.UpdateNodeAsync(id, dto);
-        if (!updated) {
-            return NotFound(new { message = $"Nó com ID {id} não encontrado." });
+        try {
+            var updated = await _nodeService.UpdateNodeAsync(id, dto);
+            if (!updated) {
+                return NotFound(new { message = $"Nó com ID {id} não encontrado." });
+            }
+            return NoContent();
+        } catch (DbUpdateException) {
+            return Conflict(new { message = $"Não foi possível atualizar o nó com ID {id}. Verifique se o endereço de rede já está em uso." });
         }
-        return NoContent();
     }
 
     /// <summary>

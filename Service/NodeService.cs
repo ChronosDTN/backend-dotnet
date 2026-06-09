@@ -7,9 +7,11 @@ using Microsoft.EntityFrameworkCore;
 
 public class NodeService : INodeService {
     private readonly ChronosDbContext _context;
+    private readonly ILogger<NodeService> _logger;
 
-    public NodeService(ChronosDbContext context) {
+    public NodeService(ChronosDbContext context, ILogger<NodeService> logger) {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<NodeDto>> GetAllNodesAsync() {
@@ -63,7 +65,13 @@ public class NodeService : INodeService {
         };
 
         _context.Nodes.Add(node);
-        await _context.SaveChangesAsync();
+
+        try {
+            await _context.SaveChangesAsync();
+        } catch (DbUpdateException ex) {
+            _logger.LogError(ex, "Erro ao criar nó com NetworkAddress '{NetworkAddress}'.", dto.NetworkAddress);
+            throw;
+        }
 
         return new NodeDto {
             IdNode = node.IdNode,
@@ -83,7 +91,13 @@ public class NodeService : INodeService {
         node.Location = dto.Location;
         node.NetworkAddress = dto.NetworkAddress;
 
-        await _context.SaveChangesAsync();
+        try {
+            await _context.SaveChangesAsync();
+        } catch (DbUpdateException ex) {
+            _logger.LogError(ex, "Erro ao atualizar nó com ID {NodeId}.", id);
+            throw;
+        }
+
         return true;
     }
 
@@ -92,7 +106,14 @@ public class NodeService : INodeService {
         if (node == null) return false;
 
         _context.Nodes.Remove(node);
-        await _context.SaveChangesAsync();
+
+        try {
+            await _context.SaveChangesAsync();
+        } catch (DbUpdateException ex) {
+            _logger.LogError(ex, "Erro ao deletar nó com ID {NodeId}.", id);
+            throw;
+        }
+
         return true;
     }
 }
