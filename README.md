@@ -24,6 +24,19 @@ O módulo segue os princípios da **Clean Architecture**, separando claramente a
 
 ---
 
+### ⚙️ Configuração de Secrets
+
+**IMPORTANTE:** Nunca commite senhas reais no Git!
+
+1. Crie um arquivo `appsettings.Development.json` (já está no .gitignore):
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "User Id=system;Password=SUA_SENHA_AQUI;Data Source=localhost:1521/CHRONOS_DB"
+  }
+}
+
 ## 📂 Estrutura de Pastas
 
 ```

@@ -1,58 +1,86 @@
-namespace ChronosDotnetApi.Controllers; // Namespace dos controladores de apresentacao da API.
+namespace ChronosDotnetApi.Controllers;
 
-using ChronosDotnetApi.Domain; // Importa as classes de entidade do dominio.
-using ChronosDotnetApi.Infrastructure; // Importa o contexto do banco de dados.
-using Microsoft.AspNetCore.Mvc; // Importa as definicoes de controladores e rotas HTTP do ASP.NET Core.
-using Microsoft.EntityFrameworkCore; // Importa metodos assincronos e de carregamento do EF Core.
+using ChronosDotnetApi.DTOs;
+using ChronosDotnetApi.Services;
+using Microsoft.AspNetCore.Mvc;
 
-[ApiController] // Declara a classe como controlador de API, ativando comportamento automatico de DTOs.
-[Route("api/[controller]")] // Define a rota de acesso base baseada no nome do controller (/api/nodes).
-public class NodesController : ControllerBase { // Declaracao do controlador NodesController.
+[ApiController]
+[Route("api/[controller]")]
+public class NodesController : ControllerBase {
 
-    private readonly ChronosDbContext _context; // Variavel interna para o contexto do banco de dados.
+    private readonly INodeService _nodeService;
 
-    public NodesController(ChronosDbContext context) { // Construtor recebendo injeção de dependência.
-        _context = context; // Atribui a instancia de banco injetada.
-    } // Fim do construtor.
+    public NodesController(INodeService nodeService) {
+        _nodeService = nodeService;
+    }
 
-    [HttpGet] // Atribui metodo GET HTTP para listagem de dados.
-    public async Task<ActionResult<IEnumerable<Node>>> GetNodes() { // Assinatura assincrona de listagem.
-        return await _context.Nodes // Acessa a colecao de nos cadastrados.
-            .Include(n => n.Balances) // Carrega de forma otimizada os saldos de stablecoin associados (JOIN).
-            .ToListAsync(); // Converte de forma assincrona a query em uma lista de retorno.
-    } // Fim do metodo GetNodes.
+    /// <summary>
+    /// Lista todos os nós ativos na rede DTN com seus saldos.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<NodeDto>), 200)]
+    public async Task<ActionResult<IEnumerable<NodeDto>>> GetNodes() {
+        var nodes = await _nodeService.GetAllNodesAsync();
+        return Ok(nodes);
+    }
 
-    [HttpGet("{id}")] // Atribui metodo GET HTTP filtrando por parametro de rota.
-    public async Task<ActionResult<Node>> GetNode(int id) { // Assinatura de busca individual.
-        var node = await _context.Nodes // Consulta a tabela.
-            .Include(n => n.Balances) // Carrega em conjunto os saldos do no.
-            .FirstOrDefaultAsync(n => n.IdNode == id); // Retorna o primeiro que coincidir com o ID ou nulo.
+    /// <summary>
+    /// Busca um nó específico por ID.
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(NodeDto), 200)]
+    [ProducesResponseType(404)]
+    public async Task<ActionResult<NodeDto>> GetNode(int id) {
+        var node = await _nodeService.GetNodeByIdAsync(id);
+        if (node == null) {
+            return NotFound(new { message = $"Nó com ID {id} não encontrado na rede DTN." });
+        }
+        return Ok(node);
+    }
 
-        if (node == null) { // Condicional se nao encontrar o registro.
-            return NotFound(); // Retorna codigo de status HTTP 404 Not Found.
-        } // Fim do bloco IF.
+    /// <summary>
+    /// Registra um novo nó gateway na rede cislunar.
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(NodeDto), 201)]
+    [ProducesResponseType(400)]
+    public async Task<ActionResult<NodeDto>> PostNode(NodeCreateDto dto) {
+        var node = await _nodeService.CreateNodeAsync(dto);
+        return CreatedAtAction(nameof(GetNode), new { id = node.IdNode }, node);
+    }
 
-        return node; // Retorna o objeto encontrado com status HTTP 200 OK.
-    } // Fim do metodo GetNode.
+    /// <summary>
+    /// Atualiza as informações de um nó existente.
+    /// </summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> PutNode(int id, NodeUpdateDto dto) {
+        var updated = await _nodeService.UpdateNodeAsync(id, dto);
+        if (!updated) {
+            return NotFound(new { message = $"Nó com ID {id} não encontrado." });
+        }
+        return NoContent();
+    }
 
-    [HttpPost] // Atribui metodo POST HTTP para insercao.
-    public async Task<ActionResult<Node>> PostNode(Node node) { // Assinatura de criacao.
-        _context.Nodes.Add(node); // Enfileira a entidade no rastreador de alteracoes do contexto.
-        await _context.SaveChangesAsync(); // Grava fisicamente as alteracoes no banco (COMMIT).
-
-        return CreatedAtAction(nameof(GetNode), new { id = node.IdNode }, node); // Retorna 201 Created.
-    } // Fim do metodo PostNode.
-
-    [HttpDelete("{id}")] // Atribui metodo DELETE HTTP para remocao de registro.
-    public async Task<IActionResult> DeleteNode(int id) { // Assinatura de exclusao.
-        var node = await _context.Nodes.FindAsync(id); // Procura o no correspondente na base.
-        if (node == null) { // Se nao localizar o registro.
-            return NotFound(); // Retorna status HTTP 404.
-        } // Fim do IF.
-
-        _context.Nodes.Remove(node); // Remove a entidade do banco.
-        await _context.SaveChangesAsync(); // Confirma as alteracoes fisicas no banco de dados.
-
-        return NoContent(); // Retorna status HTTP 204 No Content indicando sucesso da operacao.
-    } // Fim do metodo DeleteNode.
-} // Fim da classe NodesController.
+    /// <summary>
+    /// Remove um nó da rede (bloqueado se houver links ativos).
+    /// </summary>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(409)]
+    public async Task<IActionResult> DeleteNode(int id) {
+        try {
+            var deleted = await _nodeService.DeleteNodeAsync(id);
+            if (!deleted) {
+                return NotFound(new { message = $"Nó com ID {id} não encontrado." });
+            }
+            return NoContent();
+        } catch (DbUpdateException) {
+            return Conflict(new { 
+                message = "Não é possível deletar este nó pois existem links de topologia ativos. Remova os links primeiro." 
+            });
+        }
+    }
+}
