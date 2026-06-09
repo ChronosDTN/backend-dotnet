@@ -462,9 +462,9 @@ A dilatação temporal na Lua (mais próxima da Terra, menos gravidade) faz o te
 
 | Nome | RM | Função |
 |---|---|---|
-| *(Adicionar nome)* | RM XXXXX | Backend .NET / Arquitetura |
-| *(Adicionar nome)* | RM XXXXX | Banco de Dados / Oracle |
-| *(Adicionar nome)* | RM XXXXX | Mobile / IoT |
+| Evellyn Ferreira | RM 562744 | Devops / IoT |
+| Fernando Charlles | RM 566482 | Banco de Dados / QA |
+| Maicon Douglas | RM 561279 | Backend .NET / Backend Java |
 
 ---
 
