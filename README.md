@@ -281,37 +281,39 @@ curl -X DELETE https://localhost:5001/api/nodes/1
 
 ---
 
-## 📊 **Diagrama de Entidade-Relacionamento**
+## 📊 **Diagrama Entidade-Relacionamento (ER)**
+
+### **Modelo de Dados Completo**
 
 ```mermaid
 erDiagram
+    NODE ||--o{ ASSET_BALANCE : possui
+    NODE ||--o{ NODE_LINK_SOURCE : origina
+    NODE ||--o{ NODE_LINK_TARGET : recebe
+
     NODE {
-        int id_node PK
-        varchar name
-        varchar location
-        varchar network_address
-        datetime created_at
+        int id_node PK "Identificador único do gateway"
+        string name "Nome do nó (ex: Gateway Lunar Alpha)"
+        string location "Localização espacial (Terra/Lua)"
+        string network_address "IP ou DNS do gateway"
+        datetime created_at "Data de registro na rede"
     }
 
     ASSET_BALANCE {
-        int id_asset PK
-        int id_node FK
-        varchar symbol
-        decimal balance
-        datetime last_update
+        int id_asset PK "ID do saldo"
+        int id_node FK "Referência ao nó proprietário"
+        string symbol "Símbolo do token (USDC/USDT)"
+        decimal balance "Saldo com 6 casas decimais"
+        datetime last_update "Última movimentação"
     }
 
     NODE_LINK {
-        int id_route PK
-        int source_node FK
-        int target_node FK
-        varchar status
-        decimal bandwidth_kbps
+        int id_route PK "ID da rota"
+        int source_node FK "Nó de origem do sinal"
+        int target_node FK "Nó de destino do sinal"
+        string status "Status do link (ACTIVE/OFFLINE)"
+        decimal bandwidth_kbps "Largura de banda do laser"
     }
-
-    NODE ||--o{ ASSET_BALANCE : "possui (1:N)"
-    NODE ||--o{ NODE_LINK : "origina (1:N)"
-    NODE ||--o{ NODE_LINK : "recebe (1:N)"
 ```
 
 ---
