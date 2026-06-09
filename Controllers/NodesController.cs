@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ChronosDotnetApi.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/[controller]")]
 public class NodesController : ControllerBase {
 
     private readonly INodeService _nodeService;
@@ -65,6 +65,7 @@ public class NodesController : ControllerBase {
     /// Atualiza as informações de um nó existente.
     /// </summary>
     [HttpPut("{id}")]
+    [HttpPatch("{id}")]
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]
