@@ -1,8 +1,9 @@
-namespace ChronosDotnetApi.Controllers;
-
 using ChronosDotnetApi.DTOs;
 using ChronosDotnetApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace ChronosDotnetApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
