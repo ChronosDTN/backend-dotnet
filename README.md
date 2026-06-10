@@ -433,28 +433,11 @@ A dilatação temporal na Lua (mais próxima da Terra, menos gravidade) faz o te
 
 > 🔗 **Link:** *(a ser adicionado após gravação)*
 
-**Conteúdo planejado:**
-- 00:00 — Introdução ao projeto e problema
-- 01:00 — Estrutura do código (Clean Architecture)
-- 02:30 — Demonstração do Swagger UI
-- 03:30 — Criando nós Terra, Lua e Satélite via API
-- 05:00 — Testando restrição de deleção com links ativos
-- 06:00 — Visualizando banco Oracle (tabelas e dados)
-- 07:00 — Rodando os testes unitários
-- 07:30 — Conclusão e próximos passos
-
 ---
 
 ### 🎤 Vídeo Pitch (3 minutos)
 
-> 🔗 **Link:** *(a ser adicionado após gravação)*
-
-**Conteúdo planejado:**
-- 00:00 — O problema: por que a internet espacial não funciona para finanças?
-- 01:00 — A solução: Chronos DTN e como funciona
-- 02:00 — Impacto: quem usa e por quê isso importa agora
-- 02:30 — Tecnologia e inovação
-- 02:50 — Call to action
+> 🔗 **Link:** https://youtu.be/Ih94mSE1dzc?si=Qwk6nfn1f57bnD0Y
 
 ---
 
